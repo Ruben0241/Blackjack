@@ -1,0 +1,313 @@
+/* ============================================
+   BALATRO STYLE — CSS ANIMATIONS & EFFECTS
+   ============================================ */
+
+/* ---------- GLITCH TEXT ---------- */
+.glitch-text {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glitch-text::before {
+  animation: glitch-before 4s infinite;
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+}
+
+.glitch-text::after {
+  animation: glitch-after 4s infinite;
+  clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+}
+
+@keyframes glitch-before {
+  0%, 88%, 100% {
+    transform: none;
+    opacity: 0;
+  }
+  89% {
+    transform: translate(-2px, 1px);
+    opacity: 0.8;
+    -webkit-text-fill-color: #00ffff;
+    color: #00ffff;
+  }
+  91% {
+    transform: translate(2px, -1px);
+    opacity: 0.8;
+    -webkit-text-fill-color: #00ffff;
+    color: #00ffff;
+  }
+  93% {
+    transform: translate(-1px, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes glitch-after {
+  0%, 88%, 100% {
+    transform: none;
+    opacity: 0;
+  }
+  90% {
+    transform: translate(2px, -1px);
+    opacity: 0.7;
+    -webkit-text-fill-color: #ff00ff;
+    color: #ff00ff;
+  }
+  92% {
+    transform: translate(-2px, 1px);
+    opacity: 0.7;
+    -webkit-text-fill-color: #ff00ff;
+    color: #ff00ff;
+  }
+  94% {
+    transform: translate(0);
+    opacity: 0;
+  }
+}
+
+/* ---------- HOLOGRAPHIC CARD ---------- */
+.holographic-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.holographic-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 0, 255, 0.12) 0%,
+    rgba(0, 255, 255, 0.12) 25%,
+    rgba(255, 255, 0, 0.08) 50%,
+    rgba(0, 255, 128, 0.12) 75%,
+    rgba(255, 0, 128, 0.12) 100%
+  );
+  background-size: 400% 400%;
+  animation: holographic 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: screen;
+}
+
+@keyframes holographic {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) brightness(1);
+    opacity: 0.6;
+  }
+  33% {
+    background-position: 100% 0%;
+    filter: hue-rotate(120deg) brightness(1.1);
+    opacity: 0.8;
+  }
+  66% {
+    background-position: 50% 100%;
+    filter: hue-rotate(240deg) brightness(1);
+    opacity: 0.6;
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(360deg) brightness(1);
+    opacity: 0.6;
+  }
+}
+
+/* ---------- GLITCH CARD (face-down) ---------- */
+.glitch-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.glitch-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(155, 48, 255, 0.3) 0%,
+    rgba(255, 0, 255, 0.2) 50%,
+    rgba(0, 255, 255, 0.3) 100%
+  );
+  animation: glitch-clip 3s infinite;
+  z-index: 2;
+  pointer-events: none;
+}
+
+@keyframes glitch-clip {
+  0%, 85%, 100% {
+    clip-path: none;
+    opacity: 0;
+    transform: none;
+  }
+  86% {
+    clip-path: polygon(0 15%, 100% 15%, 100% 30%, 0 30%);
+    opacity: 1;
+    transform: translateX(-3px);
+  }
+  88% {
+    clip-path: polygon(0 45%, 100% 45%, 100% 55%, 0 55%);
+    opacity: 1;
+    transform: translateX(3px);
+  }
+  90% {
+    clip-path: polygon(0 70%, 100% 70%, 100% 80%, 0 80%);
+    opacity: 1;
+    transform: translateX(-2px);
+  }
+  92% {
+    opacity: 0;
+    clip-path: none;
+  }
+}
+
+/* ---------- NEON PULSE (table border) ---------- */
+.neon-pulse {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px rgba(155, 48, 255, 0.4),
+      0 0 20px rgba(155, 48, 255, 0.2),
+      inset 0 0 20px rgba(155, 48, 255, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(155, 48, 255, 0.7),
+      0 0 40px rgba(155, 48, 255, 0.4),
+      0 0 80px rgba(255, 0, 255, 0.15),
+      inset 0 0 30px rgba(155, 48, 255, 0.1);
+  }
+}
+
+/* ---------- JOKER CARD FLIP ---------- */
+.joker-card-wrapper {
+  perspective: 800px;
+}
+
+.joker-card-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.joker-card-wrapper:hover .joker-card-inner {
+  transform: rotateY(8deg) rotateX(-4deg);
+}
+
+.joker-card-front,
+.joker-card-back {
+  backface-visibility: hidden;
+}
+
+/* ---------- GLOW PULSE (joker slots) ---------- */
+.glow-pulse {
+  animation: glow-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 6px rgba(155, 48, 255, 0.5),
+      0 0 12px rgba(155, 48, 255, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 12px rgba(255, 0, 255, 0.7),
+      0 0 24px rgba(155, 48, 255, 0.5),
+      0 0 40px rgba(255, 0, 255, 0.2);
+  }
+}
+
+/* ---------- STRATEGY HINT BLINK ---------- */
+.hint-blink {
+  animation: hint-blink 0.6s ease-in-out 2;
+}
+
+@keyframes hint-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.08); }
+}
+
+/* ---------- SCORE SCREEN SLIDE IN ---------- */
+.score-slide-in {
+  animation: score-slide-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes score-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ---------- PIXEL FONT ---------- */
+.pixel-font {
+  font-family: 'Press Start 2P', monospace;
+}
+
+/* ---------- BUTTON HOVER GLOW ---------- */
+.btn-glow-purple:hover {
+  box-shadow:
+    0 0 20px rgba(155, 48, 255, 0.8),
+    0 0 40px rgba(155, 48, 255, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.btn-glow-green:hover {
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.8),
+    0 0 40px rgba(0, 255, 136, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.btn-glow-gold:hover {
+  box-shadow:
+    0 0 20px rgba(255, 215, 0, 0.8),
+    0 0 40px rgba(255, 215, 0, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.btn-glow-cyan:hover {
+  box-shadow:
+    0 0 20px rgba(0, 255, 255, 0.8),
+    0 0 40px rgba(0, 255, 255, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ---------- SHIMMER EFFECT ---------- */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GameState, Hand } from '../types/game';
+import type { GameState, Hand, Joker, GameStats, SideBetResult } from '../types/game';
 import {
   calculatePayout,
   canDouble,
@@ -9,13 +9,26 @@ import {
   getHandResult,
   isBust,
   isBlackjack,
+  isRed,
 } from './gameLogic';
+import { loadStats, saveStats, updateStats } from './stats';
 
 type Card = import('../types/game').Card;
 
-type GameStore = GameState & {
+type ExtendedGameState = GameState & {
+  activeJokers: Joker[];
+  sideBet: number;
+  sideBetResult: SideBetResult | null;
+  stats: GameStats;
+  strategyMode: boolean;
+  doubleCount: number; // track doubles this round for The Gambler
+};
+
+type GameStore = ExtendedGameState & {
   placeBet: (amount: number) => void;
   clearBet: () => void;
+  placeSideBet: (amount: number) => void;
+  clearSideBet: () => void;
   deal: () => void;
   hit: () => void;
   stand: () => void;
@@ -24,6 +37,8 @@ type GameStore = GameState & {
   takeInsurance: () => void;
   declineInsurance: () => void;
   newRound: () => void;
+  selectJokers: (jokers: Joker[]) => void;
+  toggleStrategyMode: () => void;
   canHit: () => boolean;
   canStand: () => boolean;
   canDoubleDown: () => boolean;
@@ -46,6 +61,19 @@ function drawCard(deck: Card[], faceDown = false): [Card, Card[]] {
   return [card, deck.slice(0, -1)];
 }
 
+/** Resolve Perfect Pairs side bet from first 2 player cards */
+function resolvePerfectPairs(cards: Card[], sideBet: number): SideBetResult | null {
+  if (sideBet <= 0 || cards.length < 2) return null;
+  if (cards[0].rank !== cards[1].rank) return null;
+  if (cards[0].suit === cards[1].suit) {
+    return { type: 'perfect', multiplier: 25, payout: sideBet * 25 };
+  }
+  if (isRed(cards[0].suit) === isRed(cards[1].suit)) {
+    return { type: 'colored', multiplier: 10, payout: sideBet * 10 };
+  }
+  return { type: 'mixed', multiplier: 5, payout: sideBet * 5 };
+}
+
 export const useGameStore = create<GameStore>((set, get) => ({
   phase: 'betting',
   playerHands: [makeHand([], 0)],
@@ -56,6 +84,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
   currentBet: 0,
   message: 'Place your bet!',
   insurancePending: false,
+  activeJokers: [],
+  sideBet: 0,
+  sideBetResult: null,
+  stats: loadStats(),
+  strategyMode: false,
+  doubleCount: 0,
+
+  selectJokers: (jokers) => set({ activeJokers: jokers }),
+
+  toggleStrategyMode: () => set(s => ({ strategyMode: !s.strategyMode })),
 
   placeBet: (amount) => {
     const { chips, currentBet, phase } = get();
@@ -70,9 +108,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ currentBet: 0 });
   },
 
+  placeSideBet: (amount) => {
+    const { chips, currentBet, sideBet, phase } = get();
+    if (phase !== 'betting') return;
+    const maxSideBet = currentBet > 0 ? Math.floor(currentBet * 0.25) : 50;
+    const newSideBet = sideBet + amount;
+    if (newSideBet > maxSideBet || newSideBet > chips - currentBet) return;
+    set({ sideBet: newSideBet });
+  },
+
+  clearSideBet: () => {
+    if (get().phase !== 'betting') return;
+    set({ sideBet: 0 });
+  },
+
   deal: () => {
-    const { chips, currentBet } = get();
-    if (currentBet < MIN_BET || currentBet > chips) return;
+    const { chips, currentBet, sideBet } = get();
+    const totalCost = currentBet + sideBet;
+    if (currentBet < MIN_BET || totalCost > chips) return;
 
     let deck = get().deck.length < 52 ? createDeck() : [...get().deck];
 
@@ -88,9 +141,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const playerHand = makeHand([c1, c3], currentBet);
     const dealerHand = makeHand([c2, c4], 0);
 
+    // Resolve side bet immediately after dealing
+    const sideBetResult = resolvePerfectPairs([c1, c3], sideBet);
+
     const playerBJ = isBlackjack(playerHand.cards);
     const dealerUpcard = dealerHand.cards[0];
     const insurancePending = dealerUpcard.rank === 'A' && !playerBJ;
+
+    const sideBetWinnings = sideBetResult ? sideBetResult.payout : 0;
 
     set({
       phase: 'dealing',
@@ -98,9 +156,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       activeHandIndex: 0,
       dealerHand,
       deck,
-      chips: chips - currentBet,
+      chips: chips - totalCost + sideBetWinnings,
       message: '',
       insurancePending,
+      sideBetResult,
+      doubleCount: 0,
     });
 
     setTimeout(() => {
@@ -113,23 +173,32 @@ export const useGameStore = create<GameStore>((set, get) => ({
           cards: dh.cards.map(c => ({ ...c, faceDown: false })),
         };
         if (isBlackjack(revealedDealer.cards)) {
+          const newChips = get().chips + currentBet;
+          const newStats = updateStats('push', 0, get().stats);
+          saveStats(newStats);
           set({
             dealerHand: revealedDealer,
             playerHands: [{ ...ph, status: 'blackjack' }],
             phase: 'round-end',
             insurancePending: false,
             message: 'Push! Both Blackjack!',
-            chips: get().chips + currentBet,
+            chips: newChips,
+            stats: newStats,
           });
         } else {
-          const payout = Math.floor(currentBet * 2.5);
+          const basePayout = Math.floor(currentBet * 2.5);
+          const jokerPayout = applyJokerBlackjack(basePayout, get().activeJokers);
+          const newChips = get().chips + jokerPayout;
+          const newStats = updateStats('blackjack', jokerPayout - currentBet, get().stats);
+          saveStats(newStats);
           set({
             dealerHand: revealedDealer,
             playerHands: [{ ...ph, status: 'blackjack' }],
             phase: 'round-end',
             insurancePending: false,
-            message: `Blackjack! You win ${payout} chips!`,
-            chips: get().chips + payout,
+            message: `Blackjack! You win ${jokerPayout} chips!`,
+            chips: newChips,
+            stats: newStats,
           });
         }
         return;
@@ -188,7 +257,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   double: () => {
-    const { phase, playerHands, activeHandIndex, chips, deck, insurancePending } = get();
+    const { phase, playerHands, activeHandIndex, chips, deck, insurancePending, doubleCount } = get();
     if (phase !== 'player-turn' || insurancePending) return;
     const hand = playerHands[activeHandIndex];
     if (!canDouble(hand) || chips < hand.bet) return;
@@ -209,6 +278,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playerHands: updatedHands,
       chips: chips - hand.bet,
       deck: d,
+      doubleCount: doubleCount + 1,
     });
 
     const nextIndex = activeHandIndex + 1;
@@ -311,13 +381,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   _resolveRound: (playerHands: Hand[], finalDealerHand: Hand) => {
     const dealerBJ = isBlackjack(finalDealerHand.cards);
+    const { activeJokers, doubleCount, stats } = get();
     let totalWinnings = 0;
     const results: string[] = [];
+    let lastResult: 'win' | 'lose' | 'push' | 'blackjack' = 'push';
+    let lastAmount = 0;
 
     for (const hand of playerHands) {
       const result = getHandResult(hand, finalDealerHand.cards);
-      const payout = calculatePayout(result, hand.bet, !!hand.isInsured, dealerBJ);
+      let payout = calculatePayout(result, hand.bet, !!hand.isInsured, dealerBJ);
+
+      // Apply joker multipliers
+      payout = applyJokerWinEffects(payout, result, activeJokers, doubleCount, stats.currentStreak);
+
       totalWinnings += payout;
+      lastResult = result === 'blackjack' ? 'blackjack' : result === 'win' ? 'win' : result === 'push' ? 'push' : 'lose';
+      lastAmount = payout > 0 ? payout - hand.bet : 0;
 
       if (result === 'blackjack') results.push('Blackjack! 3:2');
       else if (result === 'win') results.push('You win!');
@@ -329,11 +408,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newChips = get().chips + totalWinnings;
     const msg = results.length === 1 ? results[0] : results.join(' | ');
 
+    const newStats = updateStats(lastResult, lastAmount, stats);
+    saveStats(newStats);
+
     set({
       phase: 'round-end',
       dealerHand: finalDealerHand,
       chips: newChips,
       message: msg,
+      stats: newStats,
     });
   },
 
@@ -344,8 +427,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       activeHandIndex: 0,
       dealerHand: makeHand([], 0),
       currentBet: 0,
+      sideBet: 0,
+      sideBetResult: null,
       message: get().chips > 0 ? 'Place your bet!' : 'Game Over!',
       insurancePending: false,
+      doubleCount: 0,
     });
   },
 
@@ -380,3 +466,50 @@ export const useGameStore = create<GameStore>((set, get) => ({
     return hand?.status === 'playing' && hand.cards.length === 2;
   },
 }));
+
+/** Apply joker multipliers for blackjack payouts */
+function applyJokerBlackjack(basePayout: number, jokers: Joker[]): number {
+  let payout = basePayout;
+  for (const joker of jokers) {
+    if (joker.effect.blackjackMultiplier) {
+      payout = Math.floor(payout * joker.effect.blackjackMultiplier);
+    }
+  }
+  return payout;
+}
+
+/** Apply joker effects to win payouts */
+function applyJokerWinEffects(
+  basePayout: number,
+  result: string,
+  jokers: Joker[],
+  doubleCount: number,
+  currentStreak: number
+): number {
+  if (basePayout === 0) return 0;
+  let payout = basePayout;
+
+  for (const joker of jokers) {
+    // Golden Touch: +10% on all wins
+    if ((result === 'win' || result === 'blackjack') && joker.effect.winMultiplier && joker.id === 'golden-touch') {
+      payout = Math.floor(payout * (1 + joker.effect.winMultiplier - 1));
+    }
+    // The Gambler: +15% per double this round
+    if (joker.id === 'gambler' && joker.effect.doubleBonus && doubleCount > 0) {
+      payout = Math.floor(payout * (1 + joker.effect.doubleBonus * doubleCount));
+    }
+    // Chip Magnet: 2x on win streak
+    if (
+      joker.id === 'chip-magnet' &&
+      joker.effect.streakBonusThreshold &&
+      joker.effect.streakBonusMultiplier &&
+      currentStreak >= joker.effect.streakBonusThreshold &&
+      (result === 'win' || result === 'blackjack')
+    ) {
+      payout = Math.floor(payout * joker.effect.streakBonusMultiplier);
+    }
+  }
+
+  return payout;
+}
+

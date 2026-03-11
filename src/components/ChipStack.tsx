@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CHIP_COLORS: Record<number, { bg: string; border: string; glow: string; label: string }> = {
-  10:  { bg: '#3b82f6', border: '#60a5fa', glow: 'rgba(59,130,246,0.7)',  label: '10' },
-  25:  { bg: '#22c55e', border: '#4ade80', glow: 'rgba(34,197,94,0.7)',   label: '25' },
-  50:  { bg: '#f59e0b', border: '#fbbf24', glow: 'rgba(245,158,11,0.7)',  label: '50' },
-  100: { bg: '#ef4444', border: '#f87171', glow: 'rgba(239,68,68,0.7)',   label: '100' },
-  500: { bg: '#8b5cf6', border: '#a78bfa', glow: 'rgba(139,92,246,0.7)',  label: '500' },
+  10:  { bg: '#1a44cc', border: '#4d88ff', glow: 'rgba(77,136,255,0.8)',   label: '10' },
+  25:  { bg: '#006622', border: '#00ff88', glow: 'rgba(0,255,136,0.8)',    label: '25' },
+  50:  { bg: '#995500', border: '#ffd700', glow: 'rgba(255,215,0,0.8)',    label: '50' },
+  100: { bg: '#880011', border: '#ff3355', glow: 'rgba(255,51,85,0.8)',    label: '100' },
+  500: { bg: '#4a0a8a', border: '#9b30ff', glow: 'rgba(155,48,255,0.9)',   label: '500' },
 };
 
 interface ChipProps {
@@ -18,12 +18,12 @@ interface ChipProps {
 export function Chip({ value, onClick, disabled, size = 'md' }: ChipProps) {
   const config = CHIP_COLORS[value] ?? CHIP_COLORS[10];
   const dim = size === 'sm' ? 44 : size === 'lg' ? 72 : 56;
-  const fontSize = size === 'sm' ? 10 : size === 'lg' ? 15 : 12;
+  const fontSize = size === 'sm' ? 9 : size === 'lg' ? 15 : 11;
 
   return (
     <motion.button
-      whileHover={!disabled ? { scale: 1.12, y: -4 } : {}}
-      whileTap={!disabled ? { scale: 0.94 } : {}}
+      whileHover={!disabled ? { scale: 1.14, y: -5 } : {}}
+      whileTap={!disabled ? { scale: 0.93 } : {}}
       onClick={onClick}
       disabled={disabled}
       style={{
@@ -34,9 +34,9 @@ export function Chip({ value, onClick, disabled, size = 'md' }: ChipProps) {
         border: `3px solid ${config.border}`,
         boxShadow: disabled
           ? 'none'
-          : `0 0 12px ${config.glow}, 0 0 24px ${config.glow}, 0 4px 8px rgba(0,0,0,0.4)`,
+          : `0 0 14px ${config.glow}, 0 0 28px ${config.glow.replace('0.8', '0.4')}, 0 4px 10px rgba(0,0,0,0.6)`,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.4 : 1,
+        opacity: disabled ? 0.35 : 1,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -51,9 +51,9 @@ export function Chip({ value, onClick, disabled, size = 'md' }: ChipProps) {
       <div style={{
         position: 'absolute',
         top: 4, left: 8,
-        width: '40%', height: '30%',
+        width: '40%', height: '28%',
         borderRadius: '50%',
-        background: 'rgba(255,255,255,0.25)',
+        background: 'rgba(255,255,255,0.3)',
         filter: 'blur(2px)',
       }} />
       {/* Dashed ring */}
@@ -61,16 +61,19 @@ export function Chip({ value, onClick, disabled, size = 'md' }: ChipProps) {
         position: 'absolute',
         inset: 5,
         borderRadius: '50%',
-        border: `2px dashed rgba(255,255,255,0.3)`,
+        border: '2px dashed rgba(255,255,255,0.35)',
       }} />
-      <span style={{
-        color: '#fff',
-        fontWeight: 900,
-        fontSize,
-        letterSpacing: '0.03em',
-        textShadow: '0 1px 2px rgba(0,0,0,0.6)',
-        zIndex: 1,
-      }}>
+      <span
+        className="pixel-font"
+        style={{
+          color: '#fff',
+          fontWeight: 900,
+          fontSize,
+          letterSpacing: '0.02em',
+          textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+          zIndex: 1,
+        }}
+      >
         {config.label}
       </span>
     </motion.button>
@@ -103,12 +106,13 @@ export function BetDisplay({ amount }: BetDisplayProps) {
         <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          className="pixel-font"
           style={{
-            color: '#fbbf24',
+            color: '#ffd700',
             fontWeight: 700,
-            fontSize: 14,
+            fontSize: 11,
             marginLeft: 6,
-            textShadow: '0 0 8px rgba(251,191,36,0.8)',
+            textShadow: '0 0 10px rgba(255,215,0,0.9)',
           }}
         >
           {amount}

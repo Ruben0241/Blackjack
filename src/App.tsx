@@ -1,17 +1,29 @@
 import { useEffect, useState } from 'react';
 import GameTable from './components/GameTable';
 import Particles from './components/Particles';
+import JokerSelectScreen from './components/JokerSelectScreen';
+import CanvasBackground from './components/CanvasBackground';
 import { startMusic, stopMusic } from './lib/audio';
 import { motion } from 'framer-motion';
+import type { Joker } from './types/game';
+import { useGameStore } from './lib/useGameStore';
+
+type AppScreen = 'splash' | 'joker-select' | 'game';
 
 export default function App() {
+  const [screen, setScreen] = useState<AppScreen>('splash');
   const [musicOn, setMusicOn] = useState(false);
-  const [started, setStarted] = useState(false);
+  const { selectJokers } = useGameStore();
 
-  const handleStart = () => {
-    setStarted(true);
-    setMusicOn(true);
+  const handleSplashStart = () => {
+    setScreen('joker-select');
     startMusic();
+    setMusicOn(true);
+  };
+
+  const handleJokersConfirmed = (jokers: Joker[]) => {
+    selectJokers(jokers);
+    setScreen('game');
   };
 
   const toggleMusic = () => {
@@ -28,11 +40,11 @@ export default function App() {
     return () => stopMusic();
   }, []);
 
-  if (!started) {
+  if (screen === 'splash') {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(180deg, #020617 0%, #0a0f1e 50%, #020617 100%)',
+        background: 'linear-gradient(180deg, #0d0520 0%, #1a0a2e 50%, #0d0520 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -42,36 +54,40 @@ export default function App() {
         position: 'relative',
         overflow: 'hidden',
       }}>
+        <CanvasBackground />
+
         {/* Animated bg glow */}
         <motion.div
-          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
           transition={{ duration: 4, repeat: Infinity }}
           style={{
             position: 'absolute',
-            width: 600,
-            height: 400,
+            width: 700,
+            height: 450,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)',
+            background: 'radial-gradient(circle, rgba(155,48,255,0.2), transparent 70%)',
             pointerEvents: 'none',
+            zIndex: 1,
           }}
         />
 
         {/* Card suit decorations */}
-        {['♠', '♥', '♦', '♣'].map((s, i) => (
+        {(['♠', '♥', '♦', '♣'] as const).map((s, i) => (
           <motion.div
             key={s}
-            animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
+            animate={{ y: [0, -12, 0], rotate: [0, 6, -6, 0] }}
             transition={{ duration: 3 + i * 0.5, repeat: Infinity, delay: i * 0.3 }}
             style={{
               position: 'absolute',
-              fontSize: 80,
-              opacity: 0.05,
-              color: s === '♥' || s === '♦' ? '#ef4444' : '#6366f1',
+              fontSize: 100,
+              opacity: 0.06,
+              color: s === '♥' || s === '♦' ? '#ff00ff' : '#9b30ff',
+              zIndex: 1,
               ...[
-                { top: '10%', left: '5%' },
-                { top: '10%', right: '5%' },
-                { bottom: '10%', left: '5%' },
-                { bottom: '10%', right: '5%' },
+                { top: '8%', left: '4%' },
+                { top: '8%', right: '4%' },
+                { bottom: '8%', left: '4%' },
+                { bottom: '8%', right: '4%' },
               ][i],
             }}
           >
@@ -83,27 +99,34 @@ export default function App() {
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 200 }}
-          style={{ textAlign: 'center' }}
+          style={{ textAlign: 'center', zIndex: 2 }}
         >
-          <h1 style={{
-            fontSize: 64,
-            fontWeight: 900,
-            letterSpacing: '0.1em',
-            background: 'linear-gradient(90deg, #6366f1, #a855f7, #ec4899, #f59e0b)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            filter: 'drop-shadow(0 0 20px rgba(139,92,246,0.6))',
-            marginBottom: 0,
-          }}>
+          <h1
+            className="glitch-text"
+            data-text="BLACKJACK"
+            style={{
+              fontSize: 72,
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+              background: 'linear-gradient(90deg, #9b30ff, #ff00ff, #ffd700, #ff00ff, #9b30ff)',
+              backgroundSize: '200% auto',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              filter: 'drop-shadow(0 0 24px rgba(155,48,255,0.8))',
+              marginBottom: 0,
+              animation: 'shimmer 3s linear infinite',
+            }}
+          >
             BLACKJACK
           </h1>
           <p style={{
             color: 'rgba(255,255,255,0.3)',
-            fontSize: 14,
-            letterSpacing: '0.3em',
-            marginTop: 4,
+            fontSize: 13,
+            letterSpacing: '0.4em',
+            marginTop: 6,
+            textTransform: 'uppercase',
           }}>
-            CASINO ROYALE
+            Casino Royale
           </p>
         </motion.div>
 
@@ -113,43 +136,44 @@ export default function App() {
           transition={{ delay: 0.4 }}
           style={{
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 12,
+            gap: 20,
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.4)',
+            zIndex: 2,
+            letterSpacing: '0.05em',
           }}
         >
-          <div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-            <span>🪙 1,000 Chips</span>
-            <span>•</span>
-            <span>♠ 6 Decks</span>
-            <span>•</span>
-            <span>🛡️ Insurance</span>
-            <span>•</span>
-            <span>✂️ Split</span>
-          </div>
+          <span>🪙 1,000 Chips</span>
+          <span>·</span>
+          <span>🃏 Joker System</span>
+          <span>·</span>
+          <span>♠ 6 Decks</span>
+          <span>·</span>
+          <span>📊 Strategy Hints</span>
         </motion.div>
 
         <motion.button
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
-          whileHover={{ scale: 1.05, y: -3 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleStart}
+          whileHover={{ scale: 1.06, y: -4 }}
+          whileTap={{ scale: 0.94 }}
+          onClick={handleSplashStart}
           style={{
-            padding: '16px 48px',
+            padding: '18px 56px',
             fontSize: 18,
-            fontWeight: 800,
+            fontWeight: 900,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            border: '2px solid #a78bfa',
+            background: 'linear-gradient(135deg, #7b1fff, #ff00ff)',
+            border: '2px solid #ff00ff',
             borderRadius: 14,
             color: '#fff',
             cursor: 'pointer',
-            boxShadow: '0 0 24px rgba(139,92,246,0.6), 0 8px 24px rgba(0,0,0,0.4)',
+            boxShadow: '0 0 28px rgba(255,0,255,0.7), 0 0 56px rgba(155,48,255,0.4), 0 8px 24px rgba(0,0,0,0.5)',
             outline: 'none',
             fontFamily: 'inherit',
+            zIndex: 2,
           }}
         >
           Play Now
@@ -159,12 +183,16 @@ export default function App() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}
+          style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, zIndex: 2 }}
         >
-          Click Play Now to start — music will begin automatically
+          Choose your Jokers · Then play!
         </motion.p>
       </div>
     );
+  }
+
+  if (screen === 'joker-select') {
+    return <JokerSelectScreen onConfirm={handleJokersConfirmed} />;
   }
 
   return (
@@ -183,15 +211,15 @@ export default function App() {
           height: 40,
           borderRadius: '50%',
           background: 'rgba(0,0,0,0.6)',
-          border: '1.5px solid rgba(99,102,241,0.4)',
-          color: musicOn ? '#a78bfa' : 'rgba(255,255,255,0.3)',
+          border: `1.5px solid ${musicOn ? 'rgba(155,48,255,0.6)' : 'rgba(255,255,255,0.2)'}`,
+          color: musicOn ? '#9b30ff' : 'rgba(255,255,255,0.3)',
           fontSize: 16,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 200,
-          boxShadow: musicOn ? '0 0 12px rgba(139,92,246,0.4)' : 'none',
+          boxShadow: musicOn ? '0 0 16px rgba(155,48,255,0.5)' : 'none',
           outline: 'none',
         }}
         title={musicOn ? 'Mute music' : 'Play music'}

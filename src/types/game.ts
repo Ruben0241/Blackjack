@@ -44,3 +44,44 @@ export type GameAction =
   | 'insurance-yes'
   | 'insurance-no'
   | 'surrender';
+
+export interface JokerEffect {
+  blackjackMultiplier?: number;
+  winMultiplier?: number;
+  aceAlwaysOptimal?: boolean;
+  doubleBonus?: number;
+  hasMirrorCard?: boolean;
+  streakBonusThreshold?: number;
+  streakBonusMultiplier?: number;
+}
+
+export type JokerRarity = 'common' | 'uncommon' | 'rare';
+
+export interface Joker {
+  id: string;
+  name: string;
+  description: string;
+  rarity: JokerRarity;
+  emoji: string;
+  effect: JokerEffect;
+}
+
+export interface GameStats {
+  handsPlayed: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  blackjacks: number;
+  currentStreak: number;
+  longestStreak: number;
+  biggestWin: number;
+  totalEarned: number;
+}
+
+export type SideBetType = 'mixed' | 'colored' | 'perfect';
+
+export interface SideBetResult {
+  type: SideBetType;
+  multiplier: number;
+  payout: number;
+}

@@ -1,11 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../lib/useGameStore';
 import HandDisplay from './HandDisplay';
 import { Chip, BetDisplay, CHIP_VALUES } from './ChipStack';
 import ActionButton from './ActionButton';
 import MessageBanner from './MessageBanner';
 import InsuranceModal from './InsuranceModal';
-import { useEffect, useRef } from 'react';
+import CanvasBackground from './CanvasBackground';
+import JokerSlots from './JokerSlots';
+import SideBetPanel from './SideBetPanel';
+import StrategyHint from './StrategyHint';
+import StatsDashboard from './StatsDashboard';
 import { playSound } from '../lib/audio';
 
 export default function GameTable() {
@@ -17,6 +22,11 @@ export default function GameTable() {
     chips,
     currentBet,
     message,
+    activeJokers,
+    sideBet,
+    sideBetResult,
+    stats,
+    strategyMode,
     placeBet,
     clearBet,
     deal,
@@ -30,8 +40,10 @@ export default function GameTable() {
     canDoubleDown,
     canSplitHand,
     insurancePending,
+    toggleStrategyMode,
   } = useGameStore();
 
+  const [showStats, setShowStats] = useState(false);
   const prevPhase = useRef(phase);
 
   useEffect(() => {
@@ -57,65 +69,41 @@ export default function GameTable() {
   const isPlayerTurn = phase === 'player-turn';
   const isRoundEnd = phase === 'round-end';
 
+  const dealerUpcard = dealerHand.cards.find(c => !c.faceDown) ?? null;
+
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: `
-          radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 60%),
-          radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.08) 0%, transparent 60%),
-          linear-gradient(180deg, #020617 0%, #0a0f1e 50%, #020617 100%)
-        `,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '20px 16px',
-        position: 'relative',
-        overflow: 'hidden',
-        fontFamily: '"Inter", "Segoe UI", sans-serif',
-      }}
-    >
-      {/* Background felt texture */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundImage: `
-          repeating-linear-gradient(
-            0deg,
-            transparent,
-            transparent 30px,
-            rgba(99,102,241,0.02) 30px,
-            rgba(99,102,241,0.02) 31px
-          ),
-          repeating-linear-gradient(
-            90deg,
-            transparent,
-            transparent 30px,
-            rgba(99,102,241,0.02) 30px,
-            rgba(99,102,241,0.02) 31px
-          )
-        `,
-        pointerEvents: 'none',
-      }} />
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(180deg, #0d0520 0%, #1a0a2e 50%, #0d0520 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '20px 16px',
+      position: 'relative',
+      overflow: 'hidden',
+      fontFamily: '"Inter", "Segoe UI", sans-serif',
+    }}>
+      <CanvasBackground />
 
       {/* Corner decorations */}
       {[
-        { top: 16, left: 16 },
-        { top: 16, right: 16 },
-        { bottom: 16, left: 16 },
-        { bottom: 16, right: 16 },
+        { top: 12, left: 12 },
+        { top: 12, right: 12 },
+        { bottom: 12, left: 12 },
+        { bottom: 12, right: 12 },
       ].map((pos, i) => (
         <div key={i} style={{
           position: 'absolute',
           ...pos,
-          width: 60,
-          height: 60,
-          borderTop: i < 2 ? '2px solid rgba(99,102,241,0.3)' : 'none',
-          borderBottom: i >= 2 ? '2px solid rgba(99,102,241,0.3)' : 'none',
-          borderLeft: i % 2 === 0 ? '2px solid rgba(99,102,241,0.3)' : 'none',
-          borderRight: i % 2 === 1 ? '2px solid rgba(99,102,241,0.3)' : 'none',
+          width: 50,
+          height: 50,
+          borderTop: i < 2 ? '2px solid rgba(155,48,255,0.4)' : 'none',
+          borderBottom: i >= 2 ? '2px solid rgba(155,48,255,0.4)' : 'none',
+          borderLeft: i % 2 === 0 ? '2px solid rgba(155,48,255,0.4)' : 'none',
+          borderRight: i % 2 === 1 ? '2px solid rgba(155,48,255,0.4)' : 'none',
           pointerEvents: 'none',
+          zIndex: 1,
         }} />
       ))}
 
@@ -125,88 +113,154 @@ export default function GameTable() {
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
-        maxWidth: 800,
-        zIndex: 1,
+        maxWidth: 860,
+        zIndex: 2,
+        flexWrap: 'wrap',
+        gap: 10,
       }}>
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
+          className="glitch-text"
+          data-text="BLACKJACK"
           style={{
-            fontSize: 28,
+            fontSize: 26,
             fontWeight: 900,
             letterSpacing: '0.08em',
-            background: 'linear-gradient(90deg, #6366f1, #a855f7, #ec4899)',
+            background: 'linear-gradient(90deg, #9b30ff, #ff00ff, #ffd700)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            textShadow: 'none',
-            filter: 'drop-shadow(0 0 8px rgba(139,92,246,0.5))',
+            filter: 'drop-shadow(0 0 10px rgba(155,48,255,0.7))',
           }}
         >
           BLACKJACK
         </motion.h1>
 
-        {/* Chips display */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'rgba(0,0,0,0.4)',
-            border: '1.5px solid rgba(99,102,241,0.3)',
-            borderRadius: 12,
-            padding: '8px 16px',
-            boxShadow: '0 0 16px rgba(99,102,241,0.15)',
-          }}
-        >
-          <span style={{ fontSize: 18 }}>🪙</span>
-          <motion.span
-            key={chips}
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Strategy Mode toggle */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleStrategyMode}
+            title="Toggle Strategy Hints"
             style={{
-              fontSize: 20,
-              fontWeight: 800,
-              color: '#fbbf24',
-              textShadow: '0 0 12px rgba(251,191,36,0.6)',
+              padding: '6px 12px',
+              borderRadius: 8,
+              background: strategyMode ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1.5px solid ${strategyMode ? 'rgba(0,255,136,0.5)' : 'rgba(255,255,255,0.15)'}`,
+              color: strategyMode ? '#00ff88' : 'rgba(255,255,255,0.4)',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              outline: 'none',
+              letterSpacing: '0.05em',
+              fontFamily: 'inherit',
+              boxShadow: strategyMode ? '0 0 10px rgba(0,255,136,0.3)' : 'none',
+              textTransform: 'uppercase',
             }}
           >
-            {chips}
-          </motion.span>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>chips</span>
-        </motion.div>
+            📊 Hints
+          </motion.button>
+
+          {/* Stats button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowStats(true)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 8,
+              background: 'rgba(155,48,255,0.1)',
+              border: '1.5px solid rgba(155,48,255,0.4)',
+              color: '#9b30ff',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              outline: 'none',
+              letterSpacing: '0.05em',
+              fontFamily: 'inherit',
+              boxShadow: '0 0 8px rgba(155,48,255,0.2)',
+              textTransform: 'uppercase',
+            }}
+          >
+            🏆 Stats
+          </motion.button>
+
+          {/* Chips display */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'rgba(0,0,0,0.4)',
+              border: '2px solid rgba(155,48,255,0.45)',
+              borderRadius: 10,
+              padding: '7px 14px',
+              boxShadow: '0 0 16px rgba(155,48,255,0.2)',
+            }}
+          >
+            <span style={{ fontSize: 16 }}>🪙</span>
+            <motion.span
+              key={chips}
+              initial={{ opacity: 0.5, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="pixel-font"
+              style={{
+                fontSize: 13,
+                color: '#ffd700',
+                textShadow: '0 0 14px rgba(255,215,0,0.9)',
+              }}
+            >
+              {chips}
+            </motion.span>
+          </motion.div>
+        </div>
       </div>
 
-      {/* Main table oval */}
+      {/* Joker slots */}
+      {activeJokers.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{ zIndex: 2, marginTop: 4 }}
+        >
+          <JokerSlots jokers={activeJokers} />
+        </motion.div>
+      )}
+
+      {/* Main table area */}
       <div style={{
         position: 'relative',
         width: '100%',
-        maxWidth: 800,
-        zIndex: 1,
+        maxWidth: 860,
+        zIndex: 2,
         display: 'flex',
         flexDirection: 'column',
         gap: 20,
         flex: 1,
         justifyContent: 'center',
       }}>
-        {/* Table felt oval */}
-        <div style={{
-          position: 'absolute',
-          inset: -20,
-          borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(5,46,22,0.6) 0%, rgba(2,20,10,0.3) 60%, transparent 80%)',
-          border: '2px solid rgba(34,197,94,0.15)',
-          boxShadow: '0 0 60px rgba(34,197,94,0.08)',
-          pointerEvents: 'none',
-        }} />
+        {/* Table oval — dark violet with neon pulse */}
+        <div
+          className="neon-pulse"
+          style={{
+            position: 'absolute',
+            inset: -20,
+            borderRadius: '45%',
+            background: 'radial-gradient(ellipse, rgba(26,10,46,0.85) 0%, rgba(13,5,32,0.5) 60%, transparent 80%)',
+            border: '2px solid rgba(155,48,255,0.5)',
+            pointerEvents: 'none',
+          }}
+        />
 
         {/* Dealer area */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
           <div style={{
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.4)',
-            letterSpacing: '0.15em',
+            fontSize: 10,
+            color: 'rgba(255,255,255,0.35)',
+            letterSpacing: '0.2em',
             textTransform: 'uppercase',
           }}>
             Dealer
@@ -219,10 +273,10 @@ export default function GameTable() {
           />
         </div>
 
-        {/* Divider */}
+        {/* Neon divider */}
         <div style={{
           height: 1,
-          background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.3), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(155,48,255,0.6), rgba(255,0,255,0.4), rgba(155,48,255,0.6), transparent)',
           margin: '0 40px',
         }} />
 
@@ -239,16 +293,23 @@ export default function GameTable() {
           flexWrap: 'wrap',
         }}>
           {playerHands.map((hand, i) => (
-            <div key={i} style={{ position: 'relative' }}>
+            <div key={i} style={{
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}>
               {playerHands.length > 1 && (
                 <div style={{
                   textAlign: 'center',
                   marginBottom: 4,
-                  fontSize: 11,
-                  color: i === activeHandIndex ? '#a5f3fc' : 'rgba(255,255,255,0.3)',
-                  letterSpacing: '0.1em',
+                  fontSize: 10,
+                  color: i === activeHandIndex ? '#9b30ff' : 'rgba(255,255,255,0.3)',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  textShadow: i === activeHandIndex ? '0 0 8px rgba(155,48,255,0.8)' : 'none',
                 }}>
-                  Hand {i + 1} {hand.bet > 0 && `• Bet: ${hand.bet}`}
+                  Hand {i + 1} {hand.bet > 0 && `· ${hand.bet}`}
                 </div>
               )}
               <HandDisplay
@@ -257,17 +318,23 @@ export default function GameTable() {
                 isActive={isPlayerTurn && i === activeHandIndex}
                 showValue={hand.cards.length > 0}
               />
+
+              {/* Strategy hint */}
+              {strategyMode && isPlayerTurn && i === activeHandIndex && dealerUpcard && (
+                <StrategyHint playerHand={hand} dealerUpcard={dealerUpcard} />
+              )}
+
               {/* Active hand glow */}
               {isPlayerTurn && i === activeHandIndex && (
                 <motion.div
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  animate={{ opacity: [0.3, 0.7, 0.3] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
                   style={{
                     position: 'absolute',
-                    inset: -8,
-                    borderRadius: 16,
-                    border: '2px solid rgba(165,243,252,0.5)',
-                    boxShadow: '0 0 20px rgba(165,243,252,0.2)',
+                    inset: -10,
+                    borderRadius: 18,
+                    border: '2px solid rgba(155,48,255,0.6)',
+                    boxShadow: '0 0 24px rgba(155,48,255,0.3)',
                     pointerEvents: 'none',
                   }}
                 />
@@ -276,97 +343,124 @@ export default function GameTable() {
           ))}
         </div>
 
-        {/* Bet area (betting phase) */}
-        <div style={{ minHeight: 140 }}>
-        <AnimatePresence>
-          {isBetting && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 16,
-              }}
-            >
-              {/* Current bet display */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Current Bet:</span>
-                {currentBet > 0 ? (
-                  <BetDisplay amount={currentBet} />
-                ) : (
-                  <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>—</span>
-                )}
-              </div>
+        {/* Bet area */}
+        <div style={{ minHeight: 180 }}>
+          <AnimatePresence>
+            {isBetting && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 16,
+                }}
+              >
+                {/* Main bet + side bet row */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 24,
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Main Bet:</span>
+                      {currentBet > 0 ? (
+                        <BetDisplay amount={currentBet} />
+                      ) : (
+                        <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>—</span>
+                      )}
+                    </div>
+                  </div>
 
-              {/* Chip selector */}
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {CHIP_VALUES.map(val => (
-                  <Chip
-                    key={val}
-                    value={val}
-                    onClick={() => handleBetChip(val)}
-                    disabled={chips < val}
+                  <SideBetPanel
+                    sideBet={sideBet}
+                    sideBetResult={sideBetResult}
+                    currentBet={currentBet}
+                    chips={chips}
+                    phase={phase}
                   />
-                ))}
-              </div>
+                </div>
 
-              {/* Bet actions */}
-              <div style={{ display: 'flex', gap: 12 }}>
-                <ActionButton
-                  onClick={clearBet}
-                  variant="ghost"
-                  disabled={currentBet === 0}
-                >
-                  Clear
-                </ActionButton>
-                <ActionButton
-                  onClick={deal}
-                  variant="success"
-                  size="lg"
-                  disabled={currentBet < 10 || currentBet > chips + currentBet}
-                >
-                  Deal
-                </ActionButton>
-              </div>
-            </motion.div>
+                {/* Chips */}
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {CHIP_VALUES.map(val => (
+                    <Chip
+                      key={val}
+                      value={val}
+                      onClick={() => handleBetChip(val)}
+                      disabled={chips < val}
+                    />
+                  ))}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <ActionButton onClick={clearBet} variant="ghost" disabled={currentBet === 0}>
+                    Clear
+                  </ActionButton>
+                  <ActionButton
+                    onClick={deal}
+                    variant="success"
+                    size="lg"
+                    disabled={currentBet < 10 || currentBet > chips + currentBet}
+                  >
+                    Deal
+                  </ActionButton>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Side bet result (non-betting phases) */}
+          {!isBetting && sideBetResult && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+              <SideBetPanel
+                sideBet={sideBet}
+                sideBetResult={sideBetResult}
+                currentBet={currentBet}
+                chips={chips}
+                phase={phase}
+              />
+            </div>
           )}
-        </AnimatePresence>
         </div>
       </div>
 
-      {/* Player action buttons */}
+      {/* Action buttons */}
       <div style={{
         display: 'flex',
         gap: 10,
         flexWrap: 'wrap',
         justifyContent: 'center',
-        zIndex: 1,
+        zIndex: 2,
         minHeight: 60,
         alignItems: 'center',
       }}>
         <AnimatePresence>
           {isPlayerTurn && !insurancePending && (
             <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0 }}>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0 }}>
                 <ActionButton onClick={() => { playSound('hit'); hit(); }} disabled={!canHit()} variant="primary">
                   Hit
                 </ActionButton>
               </motion.div>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.05 }}>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0.05 }}>
                 <ActionButton onClick={() => { playSound('stand'); stand(); }} disabled={!canStand()} variant="success">
                   Stand
                 </ActionButton>
               </motion.div>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}>
                 <ActionButton onClick={() => { playSound('chip'); doubleDown(); }} disabled={!canDoubleDown()} variant="warning">
                   Double
                 </ActionButton>
               </motion.div>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.15 }}>
-                <ActionButton onClick={() => { playSound('chip'); split(); }} disabled={!canSplitHand()} variant="ghost">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0.15 }}>
+                <ActionButton onClick={() => { playSound('chip'); split(); }} disabled={!canSplitHand()} variant="cyan">
                   Split
                 </ActionButton>
               </motion.div>
@@ -374,11 +468,7 @@ export default function GameTable() {
           )}
 
           {isRoundEnd && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
               <ActionButton onClick={newRound} variant="primary" size="lg">
                 New Round
               </ActionButton>
@@ -387,20 +477,25 @@ export default function GameTable() {
         </AnimatePresence>
       </div>
 
-      {/* Rules reminder */}
+      {/* Rules */}
       <div style={{
         fontSize: 10,
-        color: 'rgba(255,255,255,0.2)',
+        color: 'rgba(255,255,255,0.15)',
         letterSpacing: '0.08em',
         textAlign: 'center',
-        zIndex: 1,
-        marginTop: 8,
+        zIndex: 2,
+        marginTop: 6,
       }}>
-        Blackjack pays 3:2 · Dealer stands on soft 17 · 6 Decks
+        Blackjack pays 3:2 · Dealer stands on soft 17 · 6 Decks · Perfect Pairs available
       </div>
 
-      {/* Insurance modal overlay */}
       <InsuranceModal />
+
+      <AnimatePresence>
+        {showStats && (
+          <StatsDashboard stats={stats} onClose={() => setShowStats(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

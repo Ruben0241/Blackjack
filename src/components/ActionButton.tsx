@@ -5,70 +5,86 @@ interface Props {
   onClick: () => void;
   disabled?: boolean;
   children: ReactNode;
-  variant?: 'primary' | 'danger' | 'warning' | 'success' | 'ghost';
+  variant?: 'primary' | 'danger' | 'warning' | 'success' | 'ghost' | 'cyan';
   size?: 'sm' | 'md' | 'lg';
+  glowClass?: string;
 }
 
 const VARIANTS = {
   primary: {
-    bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    border: '#a78bfa',
-    glow: 'rgba(139,92,246,0.6)',
+    bg: 'linear-gradient(135deg, #7b1fff, #9b30ff)',
+    border: '#b44fff',
+    glow: 'rgba(155,48,255,0.7)',
     color: '#fff',
+    glowClass: 'btn-glow-purple',
   },
   danger: {
-    bg: 'linear-gradient(135deg, #ef4444, #dc2626)',
-    border: '#f87171',
-    glow: 'rgba(239,68,68,0.6)',
+    bg: 'linear-gradient(135deg, #cc0044, #ff0066)',
+    border: '#ff3385',
+    glow: 'rgba(255,0,102,0.7)',
     color: '#fff',
+    glowClass: '',
   },
   warning: {
-    bg: 'linear-gradient(135deg, #f59e0b, #d97706)',
-    border: '#fbbf24',
-    glow: 'rgba(245,158,11,0.6)',
-    color: '#fff',
+    bg: 'linear-gradient(135deg, #c8a200, #ffd700)',
+    border: '#ffe44d',
+    glow: 'rgba(255,215,0,0.7)',
+    color: '#000',
+    glowClass: 'btn-glow-gold',
   },
   success: {
-    bg: 'linear-gradient(135deg, #22c55e, #16a34a)',
-    border: '#4ade80',
-    glow: 'rgba(34,197,94,0.6)',
-    color: '#fff',
+    bg: 'linear-gradient(135deg, #006633, #00ff88)',
+    border: '#00ff88',
+    glow: 'rgba(0,255,136,0.7)',
+    color: '#000',
+    glowClass: 'btn-glow-green',
   },
   ghost: {
-    bg: 'rgba(255,255,255,0.08)',
+    bg: 'rgba(255,255,255,0.06)',
     border: 'rgba(255,255,255,0.2)',
     glow: 'rgba(255,255,255,0.1)',
     color: 'rgba(255,255,255,0.7)',
+    glowClass: '',
+  },
+  cyan: {
+    bg: 'linear-gradient(135deg, #006888, #00ffff)',
+    border: '#00ffff',
+    glow: 'rgba(0,255,255,0.7)',
+    color: '#000',
+    glowClass: 'btn-glow-cyan',
   },
 };
 
 export default function ActionButton({ onClick, disabled, children, variant = 'primary', size = 'md' }: Props) {
   const v = VARIANTS[variant];
-  const padding = size === 'lg' ? '12px 28px' : size === 'sm' ? '6px 14px' : '9px 20px';
-  const fontSize = size === 'lg' ? 16 : size === 'sm' ? 12 : 14;
+  const padding = size === 'lg' ? '13px 30px' : size === 'sm' ? '6px 14px' : '10px 22px';
+  const fontSize = size === 'lg' ? 16 : size === 'sm' ? 12 : 13;
 
   return (
     <motion.button
-      whileHover={!disabled ? { scale: 1.05, y: -2 } : {}}
-      whileTap={!disabled ? { scale: 0.95 } : {}}
+      whileHover={!disabled ? { scale: 1.06, y: -3 } : {}}
+      whileTap={!disabled ? { scale: 0.94 } : {}}
       onClick={onClick}
       disabled={disabled}
+      className={!disabled ? v.glowClass : ''}
       style={{
         padding,
-        borderRadius: 10,
+        borderRadius: 8,
         background: v.bg,
-        border: `1.5px solid ${v.border}`,
-        boxShadow: disabled ? 'none' : `0 0 12px ${v.glow}, 0 4px 8px rgba(0,0,0,0.3)`,
+        border: `2px solid ${v.border}`,
+        boxShadow: disabled
+          ? 'none'
+          : `0 0 14px ${v.glow}, 0 0 28px ${v.glow.replace('0.7', '0.3')}, 0 4px 10px rgba(0,0,0,0.4)`,
         color: v.color,
         fontSize,
-        fontWeight: 700,
-        letterSpacing: '0.05em',
+        fontWeight: 800,
+        letterSpacing: '0.06em',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.35 : 1,
+        opacity: disabled ? 0.3 : 1,
         textTransform: 'uppercase',
         outline: 'none',
         fontFamily: 'inherit',
-        transition: 'opacity 0.2s',
+        transition: 'box-shadow 0.2s ease, opacity 0.2s',
         whiteSpace: 'nowrap',
       }}
     >
