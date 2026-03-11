@@ -15,18 +15,17 @@ export default function PlayingCard({ card, index = 0, delay = 0, isActive = fal
 
   return (
     <motion.div
-      initial={{ y: -120, opacity: 0, rotateY: 90, scale: 0.8 }}
-      animate={{ y: 0, opacity: 1, rotateY: card.faceDown ? 180 : 0, scale: 1 }}
+      initial={{ y: -60, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
       transition={{
         type: 'spring',
-        stiffness: 300,
-        damping: 22,
+        stiffness: 280,
+        damping: 24,
         delay: delay + index * 0.1,
       }}
       style={{
         width: 80,
         height: 112,
-        perspective: 600,
         flexShrink: 0,
         position: 'relative',
       }}

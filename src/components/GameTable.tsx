@@ -163,8 +163,8 @@ export default function GameTable() {
           <span style={{ fontSize: 18 }}>🪙</span>
           <motion.span
             key={chips}
-            initial={{ scale: 1.3, color: '#fbbf24' }}
-            animate={{ scale: 1, color: '#fbbf24' }}
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
             style={{
               fontSize: 20,
               fontWeight: 800,
@@ -277,12 +277,13 @@ export default function GameTable() {
         </div>
 
         {/* Bet area (betting phase) */}
+        <div style={{ minHeight: 140 }}>
         <AnimatePresence>
           {isBetting && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -333,6 +334,7 @@ export default function GameTable() {
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </div>
 
       {/* Player action buttons */}
@@ -342,47 +344,28 @@ export default function GameTable() {
         flexWrap: 'wrap',
         justifyContent: 'center',
         zIndex: 1,
-        minHeight: 52,
+        minHeight: 60,
+        alignItems: 'center',
       }}>
         <AnimatePresence>
           {isPlayerTurn && !insurancePending && (
             <>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ delay: 0 }}
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0 }}>
                 <ActionButton onClick={() => { playSound('hit'); hit(); }} disabled={!canHit()} variant="primary">
                   Hit
                 </ActionButton>
               </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ delay: 0.05 }}
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.05 }}>
                 <ActionButton onClick={() => { playSound('stand'); stand(); }} disabled={!canStand()} variant="success">
                   Stand
                 </ActionButton>
               </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ delay: 0.1 }}
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.1 }}>
                 <ActionButton onClick={() => { playSound('chip'); doubleDown(); }} disabled={!canDoubleDown()} variant="warning">
                   Double
                 </ActionButton>
               </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ delay: 0.15 }}
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.15 }}>
                 <ActionButton onClick={() => { playSound('chip'); split(); }} disabled={!canSplitHand()} variant="ghost">
                   Split
                 </ActionButton>
@@ -392,10 +375,9 @@ export default function GameTable() {
 
           {isRoundEnd && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300 }}
             >
               <ActionButton onClick={newRound} variant="primary" size="lg">
                 New Round

@@ -90,9 +90,9 @@ export function BetDisplay({ amount }: BetDisplayProps) {
         {chips.map((chip, i) => (
           <motion.div
             key={`${chip.value}-${i}`}
-            initial={{ y: -40, opacity: 0, scale: 0.6 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 20, opacity: 0, scale: 0.6 }}
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 10, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.06 }}
           >
             <Chip value={chip.value} size="sm" />
